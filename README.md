@@ -24,9 +24,11 @@ OmniGuard detects **6 categories** of dark patterns:
 ### How It Works
 
 1. **User browses** any webpage normally
-2. **Click "Scan"** in the extension popup
+2. **Two Scanning Modes**:
+   - **Manual Mode:** Click "Scan" in the extension popup.
+   - **Auto-Scan Mode:** Toggle "Auto-Scan on Scroll" in the popup. OmniGuard will automatically capture and analyze the screen as you scroll (debounced to save API credits), clearing old bounding boxes instantly.
 3. **Viewport screenshot** is captured (never stored — ephemeral)
-4. **Gemini 3.7 Flash** analyzes the screenshot with multimodal reasoning
+4. **Gemini 3.7 Flash** (with fallback to **Llama 3.2 Vision**) analyzes the screenshot with multimodal reasoning
 5. **Bounding boxes** are overlaid directly on deceptive elements
 6. **Tooltips** show the category, risk score, and plain-English explanation
 
@@ -35,14 +37,14 @@ OmniGuard detects **6 categories** of dark patterns:
 ## 🏗️ Architecture
 
 ```
-Extension (React 18 + Vite)          FastAPI Backend              Gemini AI
+Extension (React 18 + Vite)          FastAPI Backend              AI Engine
 ┌─────────────────────────┐    ┌──────────────────────┐    ┌──────────────┐
 │ Popup UI                │    │ POST /analyze        │    │ Gemini 3.7   │
 │ Service Worker          │───▶│ Multimodal prompt    │───▶│ Flash        │
-│ Content Script (overlay)│◀───│ JSON response        │◀───│ Vision + NLP │
-└─────────────────────────┘    └──────────────────────┘    └──────────────┘
-     Manifest V3                    Stateless                 Multimodal
-     Shadow DOM                     Zero-DB                   Reasoning
+│ Content Script (overlay)│◀───│ JSON response        │◀───│ (Fallback to │
+└─────────────────────────┘    └──────────────────────┘    │ Llama 3.2)   │
+     Manifest V3                    Stateless              └──────────────┘
+     Shadow DOM                     Zero-DB                   Multimodal
 ```
 
 **Privacy:** Viewport screenshots are processed in-memory and **never stored** (zero-DB architecture).
@@ -83,6 +85,7 @@ copy .env.example .env       # Windows
 # cp .env.example .env       # macOS/Linux
 
 # Edit .env and add your GEMINI_API_KEY
+# (Optional) Add FALLBACK_API_KEY for NVIDIA NIM Llama 3.2 Vision fallback
 
 # Start the server
 python main.py
@@ -117,8 +120,8 @@ npm run build
 
 1. Navigate to any website
 2. Click the **OmniGuard AI** extension icon
-3. Click **"Scan This Page"**
-4. Wait for analysis (~1-2 seconds)
+3. **Manual Mode:** Click **"Scan This Page"**
+4. **Auto-Scan Mode:** Toggle **"Auto-Scan on Scroll"** — the extension will automatically scan the page as you navigate.
 5. See bounding boxes appear over any detected dark patterns!
 
 ---
@@ -132,7 +135,7 @@ npm run build
 | Extension Runtime | Manifest V3 APIs | Tab capture, service worker |
 | Overlay System | Shadow DOM + CSS | Non-destructive visual warnings |
 | Backend | Python FastAPI | Async request orchestration |
-| AI Engine | Gemini 3.7 Flash | Multimodal dark pattern detection |
+| AI Engine | Gemini 3.7 Flash & Llama 3.2 Vision | Multimodal dark pattern detection with robust fallback |
 | Streaming | SSE | Real-time inference updates |
 
 ---
