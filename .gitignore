@@ -1,0 +1,8 @@
+# OmniGuard AI - Backend
+.env
+__pycache__/
+*.pyc
+
+# Extension
+extension/node_modules/
+extension/dist/
