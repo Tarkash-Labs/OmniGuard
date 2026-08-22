@@ -10,10 +10,14 @@ export default function Popup() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
   const [backendOnline, setBackendOnline] = useState(null);
+  const [autoScanEnabled, setAutoScanEnabled] = useState(false);
 
-  // Check backend health on mount
+  // Check backend health and storage on mount
   useEffect(() => {
     checkBackendHealth();
+    chrome.storage.local.get(["autoScanEnabled"], (result) => {
+      setAutoScanEnabled(result.autoScanEnabled || false);
+    });
   }, []);
 
   // Listen for results from service worker
@@ -59,6 +63,14 @@ export default function Popup() {
     });
     setResults(null);
     setStatus("idle");
+  }, []);
+
+  const toggleAutoScan = useCallback(() => {
+    setAutoScanEnabled(prev => {
+      const newState = !prev;
+      chrome.storage.local.set({ autoScanEnabled: newState });
+      return newState;
+    });
   }, []);
 
   const getRiskBadgeStyle = (level) => ({
@@ -140,6 +152,22 @@ export default function Popup() {
             <span>Scan This Page</span>
           </button>
         )}
+
+        {/* Auto Scan Toggle */}
+        <div className="auto-scan-container">
+          <label className="toggle-switch">
+            <input 
+              type="checkbox" 
+              checked={autoScanEnabled}
+              onChange={toggleAutoScan}
+            />
+            <span className="toggle-slider"></span>
+          </label>
+          <div className="toggle-label">
+            <strong>Auto-Scan on Scroll</strong>
+            <span>Detects patterns automatically as you browse</span>
+          </div>
+        </div>
       </div>
 
       {/* Results */}

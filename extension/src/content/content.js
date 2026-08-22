@@ -27,6 +27,20 @@ const CATEGORY_CONFIG = {
 
 // Track our overlay container
 let overlayContainer = null;
+let scrollTimeout = null;
+let isAutoScanEnabled = false;
+
+// Initialize auto-scan state
+chrome.storage.local.get(["autoScanEnabled"], (result) => {
+  isAutoScanEnabled = result.autoScanEnabled || false;
+});
+
+// Listen for toggle changes
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === "local" && changes.autoScanEnabled !== undefined) {
+    isAutoScanEnabled = changes.autoScanEnabled.newValue;
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Message Listener
@@ -38,6 +52,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     clearOverlays();
   }
 });
+
+// ---------------------------------------------------------------------------
+// Scroll Listener (Auto-Scan)
+// ---------------------------------------------------------------------------
+window.addEventListener("scroll", () => {
+  if (!isAutoScanEnabled) return;
+
+  // Immediately clear existing overlays
+  clearOverlays();
+
+  // Debounce the new scan request
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+
+  scrollTimeout = setTimeout(() => {
+    chrome.runtime.sendMessage({ type: "REQUEST_AUTO_SCAN" });
+  }, 1500);
+}, { passive: true });
 
 // ---------------------------------------------------------------------------
 // Overlay Management

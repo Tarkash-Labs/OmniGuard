@@ -14,6 +14,8 @@ const API_BASE_URL = "http://localhost:8000";
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "START_SCAN") {
     handleScan();
+  } else if (message.type === "REQUEST_AUTO_SCAN") {
+    handleScan(true);
   }
   // Return true to indicate async response (even though we use messaging)
   return true;
@@ -22,10 +24,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // ---------------------------------------------------------------------------
 // Core Scan Flow
 // ---------------------------------------------------------------------------
-async function handleScan() {
+async function handleScan(isAutoScan = false) {
   try {
     // Notify popup that scanning has started
-    broadcastToPopup({ type: "ANALYSIS_STATUS", status: "scanning" });
+    if (!isAutoScan) {
+      broadcastToPopup({ type: "ANALYSIS_STATUS", status: "scanning" });
+    }
 
     // 1. Get the active tab
     const [tab] = await chrome.tabs.query({
@@ -107,10 +111,12 @@ async function handleScan() {
     });
   } catch (error) {
     console.error("❌ OmniGuard: Scan failed:", error);
-    broadcastToPopup({
-      type: "ANALYSIS_ERROR",
-      error: error.message,
-    });
+    if (!isAutoScan) {
+      broadcastToPopup({
+        type: "ANALYSIS_ERROR",
+        error: error.message,
+      });
+    }
   }
 }
 
