@@ -34,6 +34,16 @@ OmniGuard detects **6 categories** of dark patterns:
 
 ---
 
+## 📸 Demo
+
+Here is OmniGuard AI in action, detecting hidden dark patterns on popular websites:
+
+![Softonic Dark Patterns Demo](assets/demo1.png)
+
+![Ryanair Dark Patterns Demo](assets/demo2.png)
+
+---
+
 ## 🏗️ Architecture
 
 ```
