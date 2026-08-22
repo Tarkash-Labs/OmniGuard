@@ -11,6 +11,7 @@ import json
 import os
 import logging
 from io import BytesIO
+import httpx
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -36,6 +37,10 @@ load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
+
+FALLBACK_API_KEY = os.getenv("FALLBACK_API_KEY", "")
+FALLBACK_API_URL = os.getenv("FALLBACK_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions")
+FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "meta/llama-3.2-90b-vision-instruct")
 
 if not GEMINI_API_KEY:
     logging.warning(
@@ -130,29 +135,68 @@ async def analyze_page(request: AnalyzeRequest):
         image.save(img_buffer, format="PNG")
         img_bytes = img_buffer.getvalue()
 
-        # 3. Send multimodal request using the new google-genai SDK
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[
-                types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_image(
-                            image=types.Image(
-                                image_bytes=img_bytes,
+        # 3. Send multimodal request using the new google-genai SDK (Async)
+        try:
+            response = await client.aio.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_bytes(
+                                data=img_bytes,
                                 mime_type="image/png",
-                            )
-                        ),
-                        types.Part.from_text(text=ANALYZE_PROMPT),
+                            ),
+                            types.Part.from_text(text=ANALYZE_PROMPT),
+                        ],
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_INSTRUCTION,
+                    temperature=0.1,  # Low temperature for consistent, factual output
+                    max_output_tokens=4096,
+                ),
+            )
+        except Exception as e:
+            logger.warning(f"Primary model {GEMINI_MODEL} failed: {e}. Attempting fallback to {FALLBACK_MODEL}...")
+            if FALLBACK_API_KEY and FALLBACK_API_URL:
+                b64_image = base64.b64encode(img_bytes).decode("utf-8")
+                payload = {
+                    "model": FALLBACK_MODEL,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "image_url": {"url": f"data:image/png;base64,{b64_image}"},
+                                    "type": "image_url"
+                                },
+                                {
+                                    "type": "text",
+                                    "text": f"{SYSTEM_INSTRUCTION}\n\n{ANALYZE_PROMPT}"
+                                }
+                            ]
+                        }
                     ],
-                )
-            ],
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                temperature=0.1,  # Low temperature for consistent, factual output
-                max_output_tokens=4096,
-            ),
-        )
+                    "temperature": 0.1,
+                    "max_tokens": 4096,
+                }
+                headers = {
+                    "Authorization": f"Bearer {FALLBACK_API_KEY}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
+                async with httpx.AsyncClient(timeout=60.0) as http_client:
+                    fb_response = await http_client.post(FALLBACK_API_URL, json=payload, headers=headers)
+                    fb_response.raise_for_status()
+                    fallback_text = fb_response.json()["choices"][0]["message"]["content"]
+                    
+                    class DummyResponse:
+                        pass
+                    response = DummyResponse()
+                    response.text = fallback_text
+            else:
+                raise e
 
         # 4. Parse the structured JSON response
         result = parse_gemini_response(response.text)
@@ -228,28 +272,67 @@ async def analyze_page_stream(request: AnalyzeRequest):
             image.save(img_buffer, format="PNG")
             img_bytes = img_buffer.getvalue()
 
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=[
-                    types.Content(
-                        role="user",
-                        parts=[
-                            types.Part.from_image(
-                                image=types.Image(
-                                    image_bytes=img_bytes,
+            try:
+                response = await client.aio.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=[
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_bytes(
+                                    data=img_bytes,
                                     mime_type="image/png",
-                                )
-                            ),
-                            types.Part.from_text(text=ANALYZE_PROMPT),
+                                ),
+                                types.Part.from_text(text=ANALYZE_PROMPT),
+                            ],
+                        )
+                    ],
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.1,
+                        max_output_tokens=4096,
+                    ),
+                )
+            except Exception as e:
+                logger.warning(f"Primary model {GEMINI_MODEL} failed in stream: {e}. Fallback to {FALLBACK_MODEL}...")
+                if FALLBACK_API_KEY and FALLBACK_API_URL:
+                    b64_image = base64.b64encode(img_bytes).decode("utf-8")
+                    payload = {
+                        "model": FALLBACK_MODEL,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "image_url": {"url": f"data:image/png;base64,{b64_image}"},
+                                        "type": "image_url"
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": f"{SYSTEM_INSTRUCTION}\n\n{ANALYZE_PROMPT}"
+                                    }
+                                ]
+                            }
                         ],
-                    )
-                ],
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_INSTRUCTION,
-                    temperature=0.1,
-                    max_output_tokens=4096,
-                ),
-            )
+                        "temperature": 0.1,
+                        "max_tokens": 4096,
+                    }
+                    headers = {
+                        "Authorization": f"Bearer {FALLBACK_API_KEY}",
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    }
+                    async with httpx.AsyncClient(timeout=60.0) as http_client:
+                        fb_response = await http_client.post(FALLBACK_API_URL, json=payload, headers=headers)
+                        fb_response.raise_for_status()
+                        fallback_text = fb_response.json()["choices"][0]["message"]["content"]
+                        
+                        class DummyResponse:
+                            pass
+                        response = DummyResponse()
+                        response.text = fallback_text
+                else:
+                    raise e
 
             result = parse_gemini_response(response.text)
 
