@@ -193,3 +193,5 @@ OmniGuard/
 ## 📄 License
 
 This project is built for the Prasunethon 2.0 hackathon.
+
+Released under the [MIT License](LICENSE).
