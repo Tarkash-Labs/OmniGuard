@@ -2,6 +2,8 @@
 OmniGuard AI - FastAPI Backend
 Stateless gateway that orchestrates viewport analysis via Gemini 3.7 Flash.
 Screenshots are processed ephemerally — never stored.
+
+Uses the new google-genai SDK (replaces deprecated google-generativeai).
 """
 
 import base64
@@ -14,7 +16,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from PIL import Image
 
 from models import (
@@ -39,7 +42,8 @@ if not GEMINI_API_KEY:
         "⚠️  GEMINI_API_KEY not set. Copy .env.example → .env and add your key."
     )
 
-genai.configure(api_key=GEMINI_API_KEY)
+# Initialize the new genai client
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # ---------------------------------------------------------------------------
 # FastAPI App
@@ -107,7 +111,7 @@ async def analyze_page(request: AnalyzeRequest):
 
     Privacy: The screenshot is processed in-memory and never persisted.
     """
-    if not GEMINI_API_KEY:
+    if not client:
         raise HTTPException(
             status_code=500,
             detail="GEMINI_API_KEY not configured. See .env.example.",
@@ -121,16 +125,30 @@ async def analyze_page(request: AnalyzeRequest):
             f"from {request.url or 'unknown URL'}"
         )
 
-        # 2. Create the Gemini model with system instruction
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            system_instruction=SYSTEM_INSTRUCTION,
-        )
+        # 2. Convert PIL image to bytes for the API
+        img_buffer = BytesIO()
+        image.save(img_buffer, format="PNG")
+        img_bytes = img_buffer.getvalue()
 
-        # 3. Send multimodal request (image + text prompt)
-        response = model.generate_content(
-            [ANALYZE_PROMPT, image],
-            generation_config=genai.types.GenerationConfig(
+        # 3. Send multimodal request using the new google-genai SDK
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_image(
+                            image=types.Image(
+                                image_bytes=img_bytes,
+                                mime_type="image/png",
+                            )
+                        ),
+                        types.Part.from_text(text=ANALYZE_PROMPT),
+                    ],
+                )
+            ],
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
                 temperature=0.1,  # Low temperature for consistent, factual output
                 max_output_tokens=4096,
             ),
@@ -190,7 +208,7 @@ async def analyze_page_stream(request: AnalyzeRequest):
     Streaming version of /analyze using Server-Sent Events.
     Sends status updates as the analysis progresses.
     """
-    if not GEMINI_API_KEY:
+    if not client:
         raise HTTPException(
             status_code=500,
             detail="GEMINI_API_KEY not configured.",
@@ -205,14 +223,29 @@ async def analyze_page_stream(request: AnalyzeRequest):
 
             yield f"data: {json.dumps({'status': 'analyzing', 'message': 'Running Gemini analysis...'})}\n\n"
 
-            model = genai.GenerativeModel(
-                model_name=GEMINI_MODEL,
-                system_instruction=SYSTEM_INSTRUCTION,
-            )
+            # Convert PIL image to bytes
+            img_buffer = BytesIO()
+            image.save(img_buffer, format="PNG")
+            img_bytes = img_buffer.getvalue()
 
-            response = model.generate_content(
-                [ANALYZE_PROMPT, image],
-                generation_config=genai.types.GenerationConfig(
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_image(
+                                image=types.Image(
+                                    image_bytes=img_bytes,
+                                    mime_type="image/png",
+                                )
+                            ),
+                            types.Part.from_text(text=ANALYZE_PROMPT),
+                        ],
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_INSTRUCTION,
                     temperature=0.1,
                     max_output_tokens=4096,
                 ),
