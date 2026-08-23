@@ -1,21 +1,10 @@
-<![CDATA[<div align="center">
-
 # 🛡️ OmniGuard AI
 
-### Real-Time Multimodal Dark Pattern & Visual Deception Radar
+> **Real-Time Multimodal Dark Pattern & Visual Deception Radar**
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev)
-[![Chrome MV3](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/)
-[![Gemini](https://img.shields.io/badge/Gemini-3.7%20Flash-8E75B2?logo=googlegemini&logoColor=white)](https://ai.google.dev)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-**OmniGuard AI** is a Chrome browser extension that acts as a **cognitive visual shield** against deceptive UI/UX. Powered by **Gemini 3.7 Flash**, it captures what users *actually see* on a webpage, detects **dark patterns** in real-time, and overlays **live bounding boxes** directly on the deceptive elements — **before users can click.**
+OmniGuard AI is a Chrome browser extension that acts as a **cognitive visual shield** against deceptive UI/UX. Powered by **Gemini 3.7 Flash**, it captures what users *actually see* on a webpage, detects **dark patterns** in real-time, and overlays **live bounding boxes** directly on the deceptive elements — **before users can click.**
 
 *Built by [Tarkash Labs](https://github.com/Tarkash-Labs)*
-
-</div>
 
 ---
 
@@ -69,7 +58,7 @@ Extension (React 18 + Vite)          FastAPI Backend              AI Engine
                                                               Multimodal
 ```
 
-> **🔒 Privacy First:** Viewport screenshots are processed in-memory and **never stored**. The entire backend is stateless with a zero-database architecture.
+> 🔒 **Privacy First:** Viewport screenshots are processed in-memory and **never stored**. The entire backend is stateless with a zero-database architecture.
 
 ---
 
@@ -156,7 +145,7 @@ npm run build
 2. Enable **Developer mode** (toggle in top-right)
 3. Click **"Load unpacked"**
 4. Select the `extension/dist` folder
-5. The OmniGuard AI icon will appear in your toolbar! 🎉
+5. The OmniGuard AI icon will appear in your toolbar!
 
 ### 5. Use It
 
@@ -164,7 +153,7 @@ npm run build
 2. Click the **OmniGuard AI** extension icon
 3. **Manual Mode:** Click **"Scan This Page"**
 4. **Auto-Scan Mode:** Toggle **"Auto-Scan on Scroll"** — the extension will automatically scan as you navigate
-5. Watch bounding boxes appear over detected dark patterns! 🛡️
+5. Watch bounding boxes appear over detected dark patterns!
 
 ---
 
@@ -216,13 +205,11 @@ OmniGuard/
 
 ## 👥 Team
 
-<table>
-  <tr>
-    <td align="center"><strong>Dhruv Jani</strong><br><sub>🎯 Team Lead</sub></td>
-    <td align="center"><strong>Yug Vasava</strong><br><sub>💻 Lead Developer</sub></td>
-    <td align="center"><strong>Avadh Vaishnani</strong><br><sub>🧪 Lead QA</sub></td>
-  </tr>
-</table>
+| Name | Role |
+|------|------|
+| **Dhruv Jani** | 🎯 Team Lead |
+| **Yug Vasava** | 💻 Lead Developer |
+| **Avadh Vaishnani** | 🧪 Lead QA |
 
 **Tarkash Labs** — Building tools that protect users on the web.
 
@@ -231,4 +218,3 @@ OmniGuard/
 ## 📄 License
 
 Released under the [MIT License](LICENSE).
-]]>
