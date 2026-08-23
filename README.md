@@ -38,9 +38,29 @@ OmniGuard detects **6 categories** of dark patterns in real-time:
 
 OmniGuard AI in action — detecting hidden dark patterns on popular websites:
 
-![Softonic Dark Patterns Demo](assets/demo1.png)
+### 1. Disguised Clicks
+OmniGuard detecting fake download buttons on Softonic.
+![Disguised Clicks Demo](assets/disguised-clicks.png)
 
-![Ryanair Dark Patterns Demo](assets/demo2.png)
+### 2. Confirmshaming
+OmniGuard catching manipulative guilt-tripping language on Ryanair's subscription prompt.
+![Confirmshaming Demo](assets/confirmshaming.png)
+
+### 3. Urgency Traps
+OmniGuard flagging fake high-demand scarcity messages on Agoda.
+![Urgency Trap Demo](assets/urgency-trap.png)
+
+### 4. Hidden Costs (Drip Pricing)
+OmniGuard highlighting excluded taxes and fees hidden in the fine print on GoDaddy.
+![Hidden Costs Demo](assets/hidden-costs.png)
+
+### 5. Sneak into Basket
+OmniGuard identifying pre-checked, unwanted software bundles on the Adobe download page.
+![Sneak into Basket Demo](assets/sneak-into-basket.png)
+
+### 6. Forced Continuity
+OmniGuard exposing hidden early termination fees in a "free trial" on Adobe Creative Cloud.
+![Forced Continuity Demo](assets/forced-continuity.png)
 
 ---
 
